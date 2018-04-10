@@ -13,6 +13,15 @@
  * @version   2.9.2
  */
 
+if(file_exists(dirname(__FILE__) . "/config.php")) {
+    require_once dirname(__FILE__) . "/config.php";
+} else {
+    define("DB_SERVER", "");
+    define("DB_USER", "");
+    define("DB_PASS", "");
+    define("DB_NAME", "");
+}
+
 class MysqliDb
 {
 
@@ -234,7 +243,7 @@ class MysqliDb
      * @param string $charset
      * @param string $socket
      */
-    public function __construct($host = null, $username = null, $password = null, $db = null, $port = null, $charset = 'utf8', $socket = null)
+    public function __construct($host = DB_SERVER, $username = DB_USER, $password = DB_PASS, $db = DB_NAME, $port = null, $charset = null, $socket = null)
     {
         $isSubQuery = false;
 
@@ -1268,7 +1277,7 @@ class MysqliDb
         $this->_query = "LOCK TABLES";
 
         // Is the table an array?
-        if(gettype($table) == "array") {
+        if(is_array($table)) {
             // Loop trough it and attach it to the query
             foreach($table as $key => $value) {
                 if(gettype($value) == "string") {
