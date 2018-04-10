@@ -61,8 +61,7 @@ class CRUD {
                 }
             } else {
                 $db->where('id', $this->getId());
-                $result = $db->update($tableName, $data);
-                $success = $result;
+                $success = $db->update($tableName, $data);
             }
 
             if($useTransaction) {
@@ -144,7 +143,7 @@ class CRUD {
         $cols = $this->getRelatedObjects($this);
         $this->getJoins($tableName);
         $result = $db->getOne($tableName, $cols);
-        if (isset($result)) {
+        if (empty($db->getLastErrno())) {
             $this->fillObjects($result);
         }
         else {
@@ -217,7 +216,7 @@ class CRUD {
         $cols = self::getRelatedObjects($object, false);
         self::getJoins($tableName);
         $results = $db->get($tableName, null, $cols);
-        if (isset($results)) {
+        if (empty($db->getLastErrno())) {
             foreach ($results as $row) {
                 $objInstance = $r->newInstanceArgs();
                 $objInstance->fillObjects($row);
@@ -249,7 +248,7 @@ class CRUD {
         $db = MysqliDb::getInstance();
         $tableName = get_called_class();
         $count = $db->getValue($tableName, "count(*)");
-        if(is_null($count)) {
+        if(!empty($db->getLastErrno())) {
             throw new Exception($db->getLastError(), $db->getLastErrno());
         }
         return $count;
@@ -264,7 +263,7 @@ class CRUD {
         $db = MysqliDb::getInstance();
         $tableName = get_called_class();
         $result = $db->getValue($tableName, "sum({$field})");
-        if(is_null($result)) {
+        if(!empty($db->getLastErrno())) {
             throw new Exception($db->getLastError(), $db->getLastErrno());
         }
         return $result;
