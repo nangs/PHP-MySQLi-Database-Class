@@ -21,7 +21,7 @@ class CRUD {
      * @param bool $useTransaction
      * @throws Exception
      */
-    function create($useTransaction = true) {
+    function save($useTransaction = true) {
         $db = MysqliDb::getInstance();
         $tableName = get_class($this);
         $data = array();
@@ -30,33 +30,55 @@ class CRUD {
             $db->startTransaction();
         }
         foreach ($props as $prop => $prop_value) {
-            if($prop_value instanceof CRUD && isset(static::$relations[get_class($prop_value)]))
+            if($prop_value instanceof CRUD)
             {
-                if(empty($props[static::$relations[get_class($prop_value)][1]])) {
-                    $prop_value->create(false);
-                    $this->{static::$relations[get_class($prop_value)][1]} = $prop_value->{static::$relations[get_class($prop_value)][0]};
+                $className = get_class($prop_value);
+                if(isset(static::$relations[$className]))
+                {
+                    if(empty($prop_value->{static::$relations[$className][0]})) {
+                        if(!empty($props[static::$relations[$className][1]])) {
+                            $prop_value->{static::$relations[$className][0]} = $props[static::$relations[$className][1]];
+                        }
+                    }
+                    $prop_value->save(false);
+                    $this->{static::$relations[$className][1]} = $prop_value->{static::$relations[$className][0]};
                 }
             }
         }
         $props = get_object_vars($this);
         foreach ($props as $prop => $prop_value) {
-            if(isset($prop_value) && !$prop_value instanceof CRUD) {
+            if($prop != "id" && isset($prop_value) && !$prop_value instanceof CRUD) {
                 $data[$prop] = $prop_value;
             }
         }
-        $id = $db->insert($tableName, $data);
-        if ($id) {
-            $this->id = $id;
-            if($useTransaction) {
-                $db->commit();
+        if(count($data) > 0) {
+            $success = false;
+            if(empty($this->id)) {
+                $id = $db->insert($tableName, $data);
+                if ($id) {
+                    $success = true;
+                    $this->id = $id;
+                }
+            } else {
+                $db->where('id', $this->getId());
+                $result = $db->update($tableName, $data);
+                $success = $result;
             }
-        } else {
+
             if($useTransaction) {
-                $db->rollback();
+                if($success) {
+                    $db->commit();
+                } else {
+                    $db->rollback();
+                }
             }
-            throw new Exception($db->getLastError(), $db->getLastErrno());
+            if(!$success) {
+                throw new Exception($db->getLastError(), $db->getLastErrno());
+            }
         }
     }
+
+
 
     /**
      * @param object $object
@@ -131,51 +153,6 @@ class CRUD {
     }
 
     /**
-     * @param bool $useTransaction
-     * @throws Exception
-     */
-    function update($useTransaction = true) {
-        $db = MysqliDb::getInstance();
-        $tableName = get_class($this);
-        $props = get_object_vars($this);
-        $data = array();
-        if($useTransaction) {
-            $db->startTransaction();
-        }
-        foreach ($props as $prop => $prop_value) {
-            if($prop != "id" && isset($prop_value))
-            {
-                if($prop_value instanceof CRUD && isset(static::$relations[get_class($prop_value)]))
-                {
-                    if(!empty($prop_value->{static::$relations[get_class($prop_value)][0]})) {
-                        $prop_value->update(false);
-                    }
-                    else if(!empty($props[static::$relations[get_class($prop_value)][1]])) {
-                        $prop_value->{static::$relations[get_class($prop_value)][0]} = $props[static::$relations[get_class($prop_value)][1]];
-                        $prop_value->update(false);
-                    }
-                } else {
-                    $data[$prop] = $prop_value;
-                }
-            }
-        }
-        if(count($data) > 0) {
-            $db->where('id', $this->getId());
-            $result = $db->update($tableName, $data);
-            if($result) {
-                if($useTransaction) {
-                    $db->commit();
-                }
-            } else {
-                if($useTransaction) {
-                    $db->rollback();
-                }
-                throw new Exception($db->getLastError(), $db->getLastErrno());
-            }
-        }
-    }
-
-    /**
      * @throws Exception
      */
     function delete() {
@@ -211,7 +188,7 @@ class CRUD {
      * @param bool $checkEmpty
      * @return $this
      */
-    static function orWhere($whereProp, &$whereValue = 'DBNULL', $operator = '=', $checkEmpty = true) {
+    static function orWhere($whereProp, $whereValue = 'DBNULL', $operator = '=', $checkEmpty = true) {
         return self::where($whereProp, $whereValue, $operator, $checkEmpty, 'OR');
     }
 

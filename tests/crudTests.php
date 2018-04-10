@@ -43,7 +43,7 @@ $ins = new insurance();
 $ins->policyNumber = 'ABCD1234';
 $ins->sumAssured = 100000;
 $ins->customer = $customer;
-$ins->create();
+$ins->save();
 print_r($ins);
 echo "<br/>";
 
@@ -52,7 +52,7 @@ $ins = new insurance();
 $ins->policyNumber = 'XYZ12345';
 $ins->sumAssured = 200000;
 $ins->customerId = 11;
-$ins->create();
+$ins->save();
 print_r($ins);
 echo "<br/>";
 
@@ -68,10 +68,11 @@ echo "<br/>";
 
 $ins = new insurance();
 $ins->id = 23;
-$ins->policyNumber = "Special";
+$ins->read();
+$ins->policyNumber = "Noob";
 $ins->customerId = 11;
-$ins->customer->name = "Karan Patel";
-$ins->update();
+$ins->customer->name = "Chirag Prajapati";
+$ins->save();
 print_r($ins);
 echo "<br/>";
 
