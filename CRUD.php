@@ -144,7 +144,9 @@ class CRUD {
         $this->getJoins($tableName);
         $result = $db->getOne($tableName, $cols);
         if (empty($db->getLastErrno())) {
-            $this->fillObjects($result);
+            if(!empty($result)) {
+                $this->fillObjects($result);
+            }
         }
         else {
             throw new Exception($db->getLastError(), $db->getLastErrno());
@@ -217,10 +219,12 @@ class CRUD {
         self::getJoins($tableName);
         $results = $db->get($tableName, null, $cols);
         if (empty($db->getLastErrno())) {
-            foreach ($results as $row) {
-                $objInstance = $r->newInstanceArgs();
-                $objInstance->fillObjects($row);
-                array_push($classObjects, $objInstance);
+            if(!empty($results)) {
+                foreach ($results as $row) {
+                    $objInstance = $r->newInstanceArgs();
+                    $objInstance->fillObjects($row);
+                    array_push($classObjects, $objInstance);
+                }
             }
         } else {
             throw new Exception($db->getLastError(), $db->getLastErrno());
@@ -248,10 +252,14 @@ class CRUD {
         $db = MysqliDb::getInstance();
         $tableName = get_called_class();
         $count = $db->getValue($tableName, "count(*)");
-        if(!empty($db->getLastErrno())) {
+        if(empty($db->getLastErrno())) {
+            if(isset($count)) {
+                return $count;
+            }
+            return 0;
+        } else {
             throw new Exception($db->getLastError(), $db->getLastErrno());
         }
-        return $count;
     }
 
     /**
@@ -263,9 +271,13 @@ class CRUD {
         $db = MysqliDb::getInstance();
         $tableName = get_called_class();
         $result = $db->getValue($tableName, "sum({$field})");
-        if(!empty($db->getLastErrno())) {
+        if(empty($db->getLastErrno())) {
+            if(isset($result)) {
+                return $result;
+            }
+            return 0;
+        } else {
             throw new Exception($db->getLastError(), $db->getLastErrno());
         }
-        return $result;
     }
 }
