@@ -136,6 +136,7 @@ class CRUD {
 
     /**
      * @throws Exception
+     * @return $this|bool
      */
     function read() {
         $db = MysqliDb::getInstance();
@@ -144,8 +145,11 @@ class CRUD {
         $this->getJoins($tableName);
         $result = $db->getOne($tableName, $cols);
         if (empty($db->getLastErrno())) {
-            if(!empty($result)) {
+            if(empty($result)) {
+                return false;
+            } else {
                 $this->fillObjects($result);
+                return $this;
             }
         }
         else {
@@ -183,6 +187,20 @@ class CRUD {
     }
 
     /**
+     * @return int
+     */
+    public static function getTotalPages() {
+        return MysqliDb::getInstance()->totalPages;
+    }
+
+    /**
+     * @param int $count
+     */
+    public static function setPageLimit($count) {
+        MysqliDb::getInstance()->pageLimit = $count;
+    }
+
+    /**
      * @param string $whereProp
      * @param string $whereValue
      * @param string $operator
@@ -206,10 +224,11 @@ class CRUD {
     }
 
     /**
+     * @param int $page
      * @return $this[]
      * @throws Exception
      */
-    static function read_all() {
+    static function read_all($page = 0) {
         $db = MysqliDb::getInstance();
         $classObjects = array();
         $tableName = get_called_class();
@@ -217,7 +236,11 @@ class CRUD {
         $object = $r->newInstanceArgs();
         $cols = self::getRelatedObjects($object, false);
         self::getJoins($tableName);
-        $results = $db->get($tableName, null, $cols);
+        if(empty($page)) {
+            $results = $db->get($tableName, null, $cols);
+        } else {
+            $results = $db->paginate($tableName, $page, $cols);
+        }
         if (empty($db->getLastErrno())) {
             if(!empty($results)) {
                 foreach ($results as $row) {
