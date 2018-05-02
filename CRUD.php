@@ -268,6 +268,19 @@ class CRUD {
     }
 
     /**
+     * @param array $data
+     * @throws Exception
+     */
+    static function update_all($data) {
+        $db = MysqliDb::getInstance();
+        $tableName = get_called_class();
+        $result = $db->update($tableName, $data);
+        if(!$result) {
+            throw new Exception($db->getLastError(), $db->getLastErrno());
+        }
+    }
+
+    /**
      * @return int
      * @throws Exception
      */

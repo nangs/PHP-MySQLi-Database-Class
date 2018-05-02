@@ -2210,12 +2210,17 @@ class MysqliDb
      * @uses mysqli->autocommit(false)
      * @uses register_shutdown_function(array($this, "_transaction_shutdown_check"))
      * @throws Exception
+     * @return bool Return false if transaction was already in progress otherwise true
      */
     public function startTransaction()
     {
+        if($this->_transaction_in_progress) {
+            return false;
+        }
         $this->mysqli()->autocommit(false);
         $this->_transaction_in_progress = true;
         register_shutdown_function(array($this, "_transaction_status_check"));
+        return true;
     }
 
     /**
@@ -2249,7 +2254,7 @@ class MysqliDb
     }
 
     /**
-     * Shutdown handler to rollback uncommited operations in order to keep
+     * Shutdown handler to rollback uncommitted operations in order to keep
      * atomic operations sane.
      *
      * @uses mysqli->rollback();
@@ -2264,7 +2269,7 @@ class MysqliDb
     }
 
     /**
-     * Query exection time tracking switch
+     * Query execution time tracking switch
      *
      * @param bool $enabled Enable execution time tracking
      * @param string $stripPrefix Prefix to strip from the path in exec log
